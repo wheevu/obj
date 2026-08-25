@@ -124,6 +124,10 @@ local function render_block(text, ctx, start)
 						out[#out + 1] = render_block(body, { data = ctx.data, element = list }, 1)
 					end
 				end
+			elseif list ~= nil and list ~= false then
+				-- Mustache sections also work as a simple truthy guard.
+				-- This is useful for optional scalar fields such as descriptions.
+				out[#out + 1] = render_block(body, ctx, 1)
 			end
 			i = after
 		elseif tag.tagtype == "close" then

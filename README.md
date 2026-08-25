@@ -1,71 +1,63 @@
 # obj
 
-A small personal archive for things I apparently decided were important.
-Static, Lua-built, no JavaScript.
+my blog.
 
-## The idea
+I write about life and whatever else I feel like putting here.
+The site is built from Markdown with a little Lua blog maker,
+mostly because I wanted an excuse to use Lua.
 
-`obj` is part archive, part diary, part evidence that I will turn anything
-into a software project if given enough time.
+## How it works
 
-Entries are plain Markdown files with a small frontmatter header.
-A stdlib-only Lua script reads them, checks that I have not made the metadata
-up incorrectly, and renders the site.
-Nothing runs in the browser except the page.
+1. **Install Lua and LuaSocket locally.**
+   `luarocks install luasocket`, or use your platform's Lua package
+   (Homebrew's Lua ships LuaSocket).
 
-## Directory layout
+2. **Write in the local GUI.**
+   `lua blog.lua editor` opens a small writing view in your browser
+   at `http://127.0.0.1:8787/`. You write without touching raw Markdown
+   and save or preview right there.
 
-| Path                    | Purpose                                            |
-|-------------------------|----------------------------------------------------|
-| `posts/`                | Content entries (Markdown + frontmatter).          |
-| `templates/`            | HTML templates used by the build.                  |
-| `lua/`                  | Lua modules (catalog, markdown, templates, rss).   |
-| `build.lua`             | The build script; reads `posts/`, writes `dist/`.  |
-| `static/`               | Static assets copied to `dist/static/`.            |
-| `dist/`                 | Build output (generated; do not edit by hand).     |
-| `.github/workflows/`    | CI that builds and deploys to GitHub Pages.        |
+3. **Publish.**
+   `lua blog.lua publish` builds the site, commits the source and content,
+   and pushes to GitHub. GitHub Actions builds the same source and GitHub
+   Pages serves the result. No manual deploy step.
 
-## Entry frontmatter schema
+4. **Read it.**
+   The live site is at <https://wheevu.github.io/obj/>.
 
-Every entry begins with a `---` block containing `key: value` lines and a
-closing `---`. Values are scalars, numbers, or comma-separated lists
-(e.g. `tags: lua, software`). No multiline blocks. After the closing
-`---`, the rest is the Markdown body.
-
-Base fields required for every entry:
-
-- `id` - unique string, format `JOSH-YYYY-NNNN`; do not reuse one.
-- `title` - the accession title.
-- `date` - `yyyy-mm-dd`.
-- `type` - one of: `essay`, `field-note`, `specimen`, `incident`, `artifact`.
-- `tags` - lowercase, comma-separated list.
-
-Per-type required fields:
-
-- `field-note`: `mood`, `location`.
-- `specimen`: `rating` (number, 0-5), `location`.
-- `incident`: `severity`, `status`.
-- `artifact`: `language`, `status`, `classification`.
-- `essay`: no extra required fields.
-
-Optional per-type fields are also understood by the build (e.g.
-`known_hazards`, `repo`, `subtitle`) but are not required.
-
-## Build locally
+## Commands
 
 ```sh
-lua5.4 build.lua     # or: luajit build.lua
+lua blog.lua new "A small thought"   # create a dated post in posts/
+lua blog.lua editor [port]           # open the local writing GUI (default 8787)
+lua blog.lua build                   # build dist/ by hand
+lua blog.lua publish                 # build, commit, and push
+lua blog.lua help                    # show help
 ```
 
-Output lands in `dist/`. Open `dist/index.html` to view.
+## Posts
 
-## Deploy
+Each file in `posts/` is one blog post: a plain Markdown file with a small
+frontmatter header. The filename starts with the date, like
+`2026-02-03-espresso-machine-lied.md`, but the build uses the date inside
+the file, not the filename.
 
-Push to `main` and GitHub Actions does the rest.
-It installs Lua, runs the build, and publishes `dist/` to GitHub Pages.
-If the site is empty, the pipeline is probably lying to you.
+Frontmatter is an implementation detail you can ignore in the editor.
+It looks like this, and three fields are enough:
 
-## License
+```md
+---
+title: A small thought
+date: 2026-02-03
+tags: life
+---
+```
 
-Content and code: see repository license. Catalogue entries are personal;
-quote at your own risk.
+Media goes in `media/` and is referenced normally:
+
+```md
+![A thing I saw](media/thing.jpg)
+```
+
+Posts support headings, bold and italic text, links, lists, blockquotes,
+code blocks, and images.

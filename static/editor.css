@@ -1,0 +1,264 @@
+/* editor.css - obj writing desk. Monochrome 2000s personal tool:
+   paper/off-white, ink/black, greys, hairline borders. No gradients,
+   shadows, colored buttons, or SaaS cards. */
+
+:root {
+  --paper: #f5f4f1;
+  --panel: #fbfaf8;
+  --field: #ffffff;
+  --ink: #1c1b19;
+  --muted: #6c6a66;
+  --faint: #9a978f;
+  --line: #cbc8c2;
+  --line-strong: #9c988f;
+  --ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Tahoma, sans-serif;
+  --mono: "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--ui);
+  font-size: 18px;
+  line-height: 1.7;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+/* --- Masthead --------------------------------------------------------- */
+.masthead {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.6rem 1.25rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+.logo { font-weight: bold; font-size: 1.35rem; letter-spacing: 0.02em; }
+.tag { font-style: italic; color: var(--muted); font-size: 0.9rem; }
+.newpost {
+  margin-left: auto;
+  text-decoration: none;
+  color: var(--ink);
+  border: 1px solid var(--line-strong);
+  background: var(--field);
+  padding: 0.3rem 0.7rem;
+  font-family: var(--ui);
+  font-size: 0.85rem;
+}
+.newpost:hover { background: var(--paper); }
+
+/* --- Saved notice ----------------------------------------------------- */
+.saved {
+  margin: 1rem 1.25rem;
+  padding: 0.5rem 0.9rem;
+  background: #ecebe7;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+
+/* --- Three-pane layout ------------------------------------------------ */
+/* Posts is a narrow rail; the editor gets the dominant share, preview
+   takes what remains. */
+.layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 1.25rem;
+  padding: 1.25rem;
+  align-items: start;
+}
+
+/* Under ~1000px collapse to one column in a sensible order:
+   editor, preview, then the posts/sidebar. */
+@media (max-width: 1000px) {
+  .layout { grid-template-columns: 1fr; }
+  .posts { order: 3; }
+  .editor-pane { order: 1; }
+  .preview-pane { order: 2; }
+}
+
+/* --- Posts rail ------------------------------------------------------- */
+.posts h2 {
+  font-size: 1rem;
+  margin: 0 0 0.5rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--line);
+}
+.posts ul { list-style: none; margin: 0; padding: 0; font-size: 0.95rem; }
+.posts li { margin: 0.4rem 0; line-height: 1.4; }
+.posts a { color: var(--ink); text-decoration: none; }
+.posts a:hover { text-decoration: underline; }
+.pdate { display: block; color: var(--faint); font-size: 0.78rem; }
+
+.media-note {
+  margin-top: 1.25rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.media-note code { background: #ecebe7; padding: 0 0.25rem; font-family: var(--mono); font-size: 0.82em; }
+.media-list { list-style: none; margin: 0.4rem 0 0; padding: 0; }
+.media-list a { color: var(--ink); text-decoration: none; font-size: 0.85rem; }
+.media-list a:hover { text-decoration: underline; }
+
+/* --- Panes ------------------------------------------------------------ */
+.editor-pane,
+.preview-pane {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  padding: 1rem;
+}
+
+/* --- Form fields ------------------------------------------------------ */
+.field { display: block; margin-bottom: 0.9rem; }
+.field label {
+  display: block;
+  font-family: var(--ui);
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.3rem;
+}
+.field input,
+.field textarea {
+  width: 100%;
+  border: 1px solid var(--line-strong);
+  background: var(--field);
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--ink);
+  padding: 0.5rem;
+}
+.field input:focus,
+.field textarea:focus { outline: 2px solid var(--ink); outline-offset: -1px; }
+
+/* --- Toolbar (bordered text controls, not colored pills) ------------- */
+.toolbar {
+  border: 1px solid var(--line);
+  border-bottom: none;
+  background: var(--panel);
+  padding: 0.4rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+.toolbar button {
+  font-family: var(--ui);
+  font-size: 0.85rem;
+  border: 1px solid var(--line-strong);
+  background: var(--field);
+  color: var(--ink);
+  line-height: 1.2;
+  padding: 0.25rem 0.6rem;
+  cursor: pointer;
+}
+.toolbar button:hover { background: var(--paper); }
+.toolbar button:active { background: #ecebe7; }
+
+/* --- Writing surface (dominant, readable measure) --------------------- */
+.writing {
+  min-height: 420px;
+  border: 1px solid var(--line-strong);
+  background: var(--field);
+  padding: 1.5rem 1.75rem;
+  font-family: var(--ui);
+  font-size: 1.125rem;
+  line-height: 1.7;
+  overflow: auto;
+  max-width: 100%;
+}
+/* Keep prose at a comfortable reading measure. */
+.writing > * { max-width: 70ch; }
+.writing:focus { outline: 2px solid var(--ink); outline-offset: -2px; }
+
+/* Images inside the editable surface stay within bounds. */
+.writing img { max-width: 100%; height: auto; }
+
+/* Drag/drop state: monochrome border + background only. The inline
+   accent outline set by the editor script is neutralized here. */
+.writing.is-dragging {
+  border: 2px dashed var(--line-strong);
+  background: #ecebe7;
+  outline: 3px solid var(--ink) !important;
+}
+
+/* --- Status lines ----------------------------------------------------- */
+.status {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-style: italic;
+}
+/* The live image-upload status (id=img-status) and any .upload-status). */
+#img-status,
+.upload-status {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  color: var(--muted) !important;
+  font-style: italic;
+  min-height: 1em;
+}
+
+/* --- Actions / primary button (ink, not colored) --------------------- */
+.actions { margin-top: 0.75rem; }
+.save {
+  font-family: var(--ui);
+  font-size: 0.95rem;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0.45rem 1.1rem;
+  cursor: pointer;
+}
+.save:hover { background: #000; }
+
+/* --- Preview pane head + toggle -------------------------------------- */
+.pane-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--ui);
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.5rem;
+}
+#preview-btn {
+  font-family: var(--ui);
+  font-size: 0.85rem;
+  border: 1px solid var(--line-strong);
+  background: var(--field);
+  color: var(--ink);
+  padding: 0.25rem 0.7rem;
+  cursor: pointer;
+}
+#preview-btn:hover { background: var(--paper); }
+
+/* --- Preview frame ---------------------------------------------------- */
+.preview-pane iframe {
+  width: 100%;
+  min-height: 520px;
+  border: 1px solid var(--line-strong);
+  background: #fff;
+}
+
+/* --- Drop hint -------------------------------------------------------- */
+/* The template hardcodes accent colors inline; force monochrome. */
+#drop-hint,
+.drop-hint {
+  margin: 0 0 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px dashed var(--line-strong) !important;
+  color: var(--muted) !important;
+  font-style: italic;
+  font-size: 0.85rem;
+  background: #ecebe7 !important;
+}
+
+/* Keep any stray images across the editor within bounds. */
+img { max-width: 100%; height: auto; }

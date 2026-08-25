@@ -5,13 +5,11 @@
 
 local catalog = {}
 
-local schema = require("schema")
+local schema   = require("schema")
 local markdown = require("markdown")   -- contract: markdown.to_html(md_text) -> html
 
-catalog.TYPES  = schema.TYPES
-catalog.LABELS = schema.LABELS
-
-local BASE_KEYS = { id = true, title = true, date = true, type = true, tags = true }
+local DATE_PREFIX_PAT = "^%d%d%d%d%-%d%d%-%d%d%-(.+)$"
+local SAFE_TOKEN_PAT  = "^[%w%-_]+$"
 
 local function trim(s)
 	return (s:gsub("^%s+", ""):gsub("%s+$", ""))
@@ -57,12 +55,12 @@ end
 local function parse_post(text)
 	if not text then return nil, "empty file" end
 
+	-- Split into lines, preserving real blank lines, so the markdown
+	-- block parser sees them exactly as written.
 	local lines = {}
 	for line in (text .. "\n"):gmatch("(.-)\n") do
 		lines[#lines + 1] = line
 	end
-	-- drop a trailing blank produced by the appended newline
-	if lines[#lines] == "" then lines[#lines] = nil end
 
 	if #lines == 0 or trim(lines[1]) ~= "---" then
 		return nil, "missing opening ---"
@@ -83,7 +81,7 @@ local function parse_post(text)
 			if key ~= "" then
 				local value = parse_value(val or "")
 				if key == "tags" then
-					-- tags must always be an array of strings
+					-- tags must always be an array of strings, lowercased.
 					if type(value) ~= "table" then value = { tostring(value) } end
 					local norm = {}
 					for _, t in ipairs(value) do
@@ -102,12 +100,40 @@ local function parse_post(text)
 		return nil, "missing closing ---"
 	end
 
-	-- body = remaining lines joined
+	-- body = remaining lines joined (blank lines preserved)
 	local body = table.concat(lines, "\n", i)
 	return fm, body
 end
 
--- Recursively list *.md files under dir, sorted.
+-- Derive a URL-safe slug from a post's filename.
+-- "2026-03-21-argued-with-a-gecko.md" -> "argued-with-a-gecko".
+-- Strips a leading yyyy-mm-dd- for readable URLs, keeps uniqueness, and
+-- validates the result is a safe path token. `used` tracks taken slugs.
+local function slug_for(filename, used)
+	local base = filename:match("([^/]+)%.md$") or filename:match("([^/]+)$")
+	if not base then return nil, "unusable filename: " .. tostring(filename) end
+
+	local core = base:match(DATE_PREFIX_PAT) or base
+	if core == "" then core = base end
+
+	-- uniqueness: append -2, -3, ... on collision
+	local candidate = core
+	local n = 2
+	while used[candidate] do
+		candidate = core .. "-" .. n
+		n = n + 1
+	end
+
+	if not candidate:match(SAFE_TOKEN_PAT) then
+		return nil, 'unsafe slug "' .. candidate .. '" from file "' .. filename
+			.. '": only a-z, 0-9, "-" and "_" allowed'
+	end
+
+	used[candidate] = true
+	return candidate
+end
+
+-- Recursively list *.md files under dir, sorted. Skips README files.
 local function list_md(dir)
 	local cmd = 'find "' .. dir .. '" -name "*.md" 2>/dev/null'
 	local f = io.popen(cmd)
@@ -115,7 +141,13 @@ local function list_md(dir)
 	local paths = {}
 	for line in f:lines() do
 		local p = trim(line)
-		if p ~= "" then paths[#paths + 1] = p end
+		if p ~= "" then
+			local base = p:match("([^/]+)$") or p
+			-- README is documentation, never post content (any case).
+			if not base:lower():match("^readme") then
+				paths[#paths + 1] = p
+			end
+		end
 	end
 	f:close()
 	table.sort(paths)
@@ -123,10 +155,12 @@ local function list_md(dir)
 end
 
 -- catalog.load(dir) -> entries, errors
+-- entries: array of { slug, title, date, tags, description, body_html }
 function catalog.load(dir)
 	local entries = {}
 	local errors = {}
 
+	local used_slugs = {}
 	local paths = list_md(dir)
 	for _, path in ipairs(paths) do
 		local text = read_file(path)
@@ -141,25 +175,25 @@ function catalog.load(dir)
 			goto continue
 		end
 
+		local slug, serr = slug_for(path, used_slugs)
+		if not slug then
+			errors[#errors + 1] = path .. ": " .. serr
+			goto continue
+		end
+
 		local err = schema.validate(fm)
 		if err then
 			errors[#errors + 1] = path .. ": " .. err
 			goto continue
 		end
 
-		local meta = {}
-		for k, v in pairs(fm) do
-			if not BASE_KEYS[k] then meta[k] = v end
-		end
-
 		entries[#entries + 1] = {
-			id        = fm.id,
-			title     = fm.title,
-			date      = fm.date,
-			type      = fm.type,
-			tags      = fm.tags or {},
-			body_html = markdown.to_html(body),
-			meta      = meta,
+			slug        = slug,
+			title       = fm.title,
+			date        = fm.date,
+			tags        = fm.tags or {},
+			description = fm.description,
+			body_html   = markdown.to_html(body, { media_prefix = "../" }),
 		}
 
 		::continue::

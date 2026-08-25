@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>obj &mdash; writing desk</title>
+<link rel="stylesheet" href="static/editor.css">
+</head>
+<body>
+
+<header class="masthead">
+  <span class="logo">obj</span>
+  <span class="tag">writing desk</span>
+  <a class="newpost" href="/?new=1">+ new post</a>
+</header>
+
+{{#saved}}
+<p class="saved">Post saved.</p>
+{{/saved}}
+
+<div class="layout">
+
+  <nav class="posts" aria-label="Posts">
+    <h2>Posts</h2>
+    <ul>
+      {{#posts}}
+      <li>
+        <a href="/?slug={{slug}}">{{title}}</a>
+        <span class="pdate">{{date}}</span>
+      </li>
+      {{/posts}}
+    </ul>
+
+    <aside class="media-note">
+      <p>Images: drop files in the <code>media/</code> folder, then use the
+      <em>img</em> button with a <code>media/name.jpg</code> path.</p>
+      {{#media}}
+      <ul class="media-list">
+        <li><a href="{{path}}">{{label}}</a></li>
+      </ul>
+      {{/media}}
+    </aside>
+  </nav>
+
+  <section class="editor-pane">
+    <form id="editor-form" method="post" action="/save">
+      <input type="hidden" name="slug" id="slug" value="{{#selected}}{{slug}}{{/selected}}">
+      <input type="hidden" name="body" id="body_md" value="">
+
+      <div class="field">
+        <label for="title">Title</label>
+        <input type="text" id="title" name="title" value="{{#selected}}{{title}}{{/selected}}">
+      </div>
+
+      <div class="field">
+        <label for="date">Date (YYYY-MM-DD)</label>
+        <input type="text" id="date" name="date" value="{{#selected}}{{date}}{{/selected}}">
+      </div>
+
+      <div class="field">
+        <label for="tags">Tags (comma separated)</label>
+        <input type="text" id="tags" name="tags" value="{{#selected}}{{tags_csv}}{{/selected}}">
+      </div>
+
+      <div class="field">
+        <label for="description">Description</label>
+        <textarea id="description" name="description" rows="2">{{#selected}}{{description}}{{/selected}}</textarea>
+      </div>
+
+      {{#selected}}
+      {{#status}}
+      <p class="status">Status: {{status}}</p>
+      {{/status}}
+      {{/selected}}
+
+      <div class="toolbar" role="toolbar" aria-label="Formatting">
+        <button type="button" data-cmd="bold" aria-label="Bold"><b>B</b></button>
+        <button type="button" data-cmd="italic" aria-label="Italic"><i>I</i></button>
+        <button type="button" data-cmd="heading" aria-label="Heading">H</button>
+        <button type="button" data-cmd="link" aria-label="Insert link">link</button>
+        <button type="button" data-cmd="quote" aria-label="Quote">&ldquo;</button>
+        <button type="button" data-cmd="code" aria-label="Code">&lt;/&gt;</button>
+        <button type="button" data-cmd="image" aria-label="Insert image">img</button>
+      </div>
+
+      <p id="drop-hint" style="margin:0 0 0.4rem;padding:0.4rem 0.6rem;border:1px dashed #c9bfa8;color:#7a5c2e;font-style:italic;font-size:0.85rem;background:#fbf7ec;">drop an image here to add it</p>
+
+      <div id="editor" class="writing" contenteditable="true" aria-label="Writing area">{{#selected}}{{{body_html}}}{{/selected}}</div>
+
+      <p id="img-status" role="status" aria-live="polite" style="margin:0.4rem 0 0;font-size:0.82rem;color:#7a5c2e;font-style:italic;min-height:1em;"></p>
+
+      <div class="actions">
+        <button type="submit" class="save">save</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="preview-pane">
+    <div class="pane-head">
+      <span>Preview</span>
+      <button type="button" id="preview-btn">preview</button>
+    </div>
+    <iframe id="preview-frame" title="Preview" sandbox=""></iframe>
+  </section>
+
+</div>
+
+<script>
+(function(){
+  var editor = document.getElementById('editor');
+  var form = document.getElementById('editor-form');
+  var bodyMd = document.getElementById('body_md');
+  var frame = document.getElementById('preview-frame');
+
+  function attr(n, a){ return n.getAttribute(a) || ""; }
+  function trim(s){ return s.replace(/^\s+|\s+$/g, ""); }
+
+  // Local media lives under /media/ in the editor, but the saved Markdown
+  // references it relative to the site root (media/...). Strip the leading
+  // slash so htmlToMarkdown persists the relative path.
+  function normSrc(src){
+    if(/^\/media\//.test(src)) return src.replace(/^\//, "");
+    return src;
+  }
+
+  // Inline-level Markdown: text, emphasis, links, code, images.
+  function inlineMd(n){
+    if(n.nodeType === 3) return n.nodeValue.replace(/\s+/g, " ");
+    if(n.nodeType !== 1) return "";
+    var t = n.tagName.toLowerCase();
+    if(t === "br") return "\n";
+    if(t === "img") return "![" + attr(n, "alt") + "](" + normSrc(attr(n, "src")) + ")";
+    if(t === "code") return "`" + n.textContent + "`";
+    if(t === "a") return "[" + kids(n) + "](" + attr(n, "href") + ")";
+    if(t === "b" || t === "strong") return "**" + kids(n) + "**";
+    if(t === "i" || t === "em") return "*" + kids(n) + "*";
+    return kids(n);
+  }
+
+  // Block-level Markdown: paragraphs, headings, quotes, lists, code.
+  function blockMd(n){
+    if(n.nodeType === 3) return n.nodeValue.replace(/\s+/g, " ");
+    if(n.nodeType !== 1) return "";
+    var t = n.tagName.toLowerCase();
+    if(t === "br") return "\n";
+    if(t === "img") return "![" + attr(n, "alt") + "](" + normSrc(attr(n, "src")) + ")";
+    if(t === "code") return "`" + n.textContent + "`";
+    if(t === "pre") return "\n\n```\n" + n.textContent + "\n```\n\n";
+    if(t === "a") return "[" + kids(n) + "](" + attr(n, "href") + ")";
+    if(t === "b" || t === "strong") return "**" + kids(n) + "**";
+    if(t === "i" || t === "em") return "*" + kids(n) + "*";
+    if(t === "h1") return "\n\n# " + trim(kids(n)) + "\n\n";
+    if(t === "h2") return "\n\n## " + trim(kids(n)) + "\n\n";
+    if(t === "h3") return "\n\n### " + trim(kids(n)) + "\n\n";
+    if(t === "p" || t === "div") return "\n\n" + trim(kids(n)) + "\n\n";
+    if(t === "blockquote"){
+      var lines = trim(kids(n)).split("\n");
+      return "\n\n" + lines.map(function(l){ return "> " + l; }).join("\n") + "\n\n";
+    }
+    if(t === "ul" || t === "ol"){
+      var items = "";
+      for(var c = n.firstChild; c; c = c.nextSibling){
+        if(c.nodeType === 1 && c.tagName.toLowerCase() === "li"){
+          items += (t === "ol" ? "1. " : "- ") + trim(blockMd(c)) + "\n";
+        }
+      }
+      return "\n\n" + items + "\n\n";
+    }
+    if(t === "li") return trim(kids(n));
+    return kids(n); // unsupported: degrade to inline text
+  }
+
+  function kids(n){
+    var s = "";
+    for(var c = n.firstChild; c; c = c.nextSibling) s += inlineMd(c);
+    return s;
+  }
+
+  // Deterministic HTML -> Markdown for the contenteditable body.
+  function htmlToMarkdown(node){
+    var out = "";
+    for(var c = node.firstChild; c; c = c.nextSibling) out += blockMd(c);
+    return out.replace(/\n{3,}/g, "\n\n").replace(/^\n+|\n+$/g, "");
+  }
+  window.htmlToMarkdown = htmlToMarkdown;
+
+  function syncBody(){ bodyMd.value = htmlToMarkdown(editor); }
+
+  document.querySelector('.toolbar').addEventListener('click', function(e){
+    var b = e.target.closest('button');
+    if(!b) return;
+    var cmd = b.getAttribute('data-cmd');
+    editor.focus();
+    if(cmd === "bold") document.execCommand("bold");
+    else if(cmd === "italic") document.execCommand("italic");
+    else if(cmd === "heading") document.execCommand("formatBlock", "", "h2");
+    else if(cmd === "quote") document.execCommand("formatBlock", "", "blockquote");
+    else if(cmd === "link"){
+      var u = prompt("Link URL:");
+      if(u) document.execCommand("createLink", "", u);
+    }
+    else if(cmd === "image"){
+      var p = prompt("Image path (media/name.jpg). Tip: you can also drag an image file straight into the writing area.", "media/");
+      if(p) document.execCommand("insertImage", "", p);
+    }
+    else if(cmd === "code"){
+      var sel = window.getSelection().toString();
+      document.execCommand("insertHTML", "", "<pre><code>" + sel + "</code></pre>");
+    }
+  });
+
+  document.getElementById('preview-btn').addEventListener('click', function(){
+    syncBody();
+    var fd = new URLSearchParams();
+    fd.set("title", document.getElementById('title').value);
+    fd.set("date", document.getElementById('date').value);
+    fd.set("tags", document.getElementById('tags').value);
+    fd.set("description", document.getElementById('description').value);
+    fd.set("body", bodyMd.value);
+    fd.set("slug", document.getElementById('slug').value);
+    fetch("/preview", { method: "POST", body: fd })
+      .then(function(r){ return r.text(); })
+      .then(function(h){ frame.srcdoc = h; });
+  });
+
+  var dropHint = document.getElementById('drop-hint');
+  var imgStatus = document.getElementById('img-status');
+
+  function setStatus(msg){
+    // Always use textContent: filenames are never interpreted as HTML.
+    imgStatus.textContent = msg || "";
+  }
+
+  // Insert an <img> at the caret when the selection lives inside the editor,
+  // otherwise append it at the end. Built with DOM APIs only.
+  function insertImage(src, alt){
+    editor.focus();
+    var sel = window.getSelection();
+    var range = null;
+    if(sel && sel.rangeCount){
+      var r = sel.getRangeAt(0);
+      if(editor.contains(r.commonAncestorContainer)) range = r;
+    }
+    var img = document.createElement('img');
+    img.src = src;
+    img.alt = alt || "";
+    if(range){
+      range.deleteContents();
+      range.insertNode(img);
+      range.setStartAfter(img);
+      range.setEndAfter(img);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    } else {
+      editor.appendChild(img);
+      editor.appendChild(document.createTextNode(" "));
+    }
+  }
+
+  // Read the file as a base64 data URL, then POST it to /media as URL-encoded
+  // {name, mime, data}. Resolves with the relative media path from the server.
+  function uploadImage(file){
+    return new Promise(function(resolve, reject){
+      var reader = new FileReader();
+      reader.onerror = function(){ reject(new Error("could not read file")); };
+      reader.onload = function(){
+        var params = new URLSearchParams();
+        params.set("name", file.name);
+        params.set("mime", file.type);
+        params.set("data", String(reader.result));
+        fetch("/media", { method: "POST", body: params })
+          .then(function(r){
+            if(!r.ok) return r.text().then(function(t){ throw new Error(t || ("server error " + r.status)); });
+            return r.json();
+          })
+          .then(function(j){
+            if(!j || j.ok !== true || !j.path) throw new Error("unexpected server response");
+            resolve(j.path);
+          })
+          .catch(function(err){ reject(err); });
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // Drop only accepts image files. Each upload is handled independently so one
+  // failure never disturbs the others or the editor content.
+  function handleFiles(fileList){
+    var imgs = [];
+    for(var i = 0; i < fileList.length; i++){
+      if(fileList[i].type && fileList[i].type.indexOf("image/") === 0) imgs.push(fileList[i]);
+    }
+    if(!imgs.length){
+      setStatus("No image files in that drop. Images only.");
+      return;
+    }
+    setStatus("Uploading " + imgs.length + " image" + (imgs.length > 1 ? "s" : "") + "...");
+    var pending = imgs.length;
+    var notes = [];
+    imgs.forEach(function(file){
+      uploadImage(file)
+        .then(function(path){
+          var base = String(path).replace(/^media\//, "");
+          var src = "/media/" + encodeURIComponent(base);
+          insertImage(src, file.name);
+          notes.push("Added " + file.name + ".");
+        })
+        .catch(function(err){
+          var why = err && err.message ? err.message : "upload failed";
+          notes.push("Could not add " + file.name + ": " + why + ".");
+        })
+        .then(function(){
+          pending--;
+          if(pending === 0) setStatus(notes.join("  "));
+        });
+    });
+  }
+
+  function setDragging(on){
+    if(on){
+      editor.classList.add("is-dragging");
+      editor.style.outline = "2px solid #7a5c2e";
+      if(dropHint) dropHint.style.background = "#efe6d2";
+    } else {
+      editor.classList.remove("is-dragging");
+      editor.style.outline = "";
+      if(dropHint) dropHint.style.background = "#fbf7ec";
+    }
+  }
+
+  editor.addEventListener("dragover", function(e){
+    e.preventDefault();
+    setDragging(true);
+  });
+  editor.addEventListener("dragleave", function(e){
+    e.preventDefault();
+    setDragging(false);
+  });
+  editor.addEventListener("drop", function(e){
+    e.preventDefault();
+    setDragging(false);
+    if(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length){
+      handleFiles(e.dataTransfer.files);
+    }
+  });
+
+  form.addEventListener('submit', function(){ syncBody(); });
+})();
+</script>
+
+</body>
+</html>

@@ -3,44 +3,36 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{page}} / {{site.title}}</title>
+<title>tag: {{tag}} / {{site.title}}</title>
 <link rel="stylesheet" href="{{base}}static/style.css">
 </head>
 <body>
 <header class="site-head">
   <a class="brand" href="{{base}}index.html">obj</a>
   <nav class="nav">
-    <a href="{{base}}index.html">home</a>
     <a href="{{base}}archive.html">archive</a>
-    <a href="{{base}}index.html#collections">collections</a>
     <a href="{{base}}rss.xml">rss</a>
   </nav>
-  <div class="page-label">{{page}}</div>
 </header>
 
 <main class="tag">
-  <h1 class="site-title">TAG: {{tag}}</h1>
-  <p class="stat"><strong>{{tag_count}}</strong> thing(s) carrying this particular label.</p>
+  <h1 class="page-title">tag: {{tag}}</h1>
+  <p class="stat">{{tag_count}} posts with this tag.</p>
 
   <section class="block">
-    <table class="rows full">
-      <thead><tr><th>id</th><th>type</th><th>title</th><th>date</th></tr></thead>
-      <tbody>
-      {{#entries}}
-      <tr>
-        <td class="id">{{id}}</td>
-        <td class="type">{{type_label}}</td>
-        <td class="title"><a href="{{base}}{{href}}">{{title}}</a></td>
-        <td class="date">{{date}}</td>
-      </tr>
-      {{/entries}}
-      </tbody>
-    </table>
+    <ul class="rows">
+    {{#entries}}
+      <li>
+        <a class="title" href="{{base}}{{href}}">{{title}}</a>
+        <span class="date">{{date}}</span>
+      </li>
+    {{/entries}}
+    </ul>
   </section>
 </main>
 
 <footer class="site-foot">
-  <span>{{site.title}}</span> &mdash; things I decided not to lose.
+  {{site.title}} &mdash; things I decided to keep.
 </footer>
 </body>
 </html>

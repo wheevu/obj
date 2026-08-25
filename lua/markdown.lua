@@ -4,7 +4,11 @@
 --
 -- Public API:
 --   local markdown = require("markdown")
---   local html = markdown.to_html(md_text)   -- md_text: string -> HTML string
+--   local html = markdown.to_html(md_text)                 -- md_text: string -> HTML string
+--   local html = markdown.to_html(md_text, opts)           -- opts is optional
+--   -- opts.media_prefix: string prepended to relative "media/" URLs in images
+--   --    (e.g. "../"); default is "". Absolute http(s)://, //, data:, and
+--   --    fragment links are left untouched.
 --
 -- Design: a single pass that groups input lines into blocks (headings,
 -- fenced code, lists, blockquotes, paragraphs), then renders each block.
@@ -25,6 +29,18 @@ local function escape(s)
 	return s
 end
 
+local function safe_url(url, allow_data_image)
+	url = url:gsub("^%s+", ""):gsub("%s+$", "")
+	local lower = url:lower()
+	if lower:match("^javascript%s*:") or lower:match("^vbscript%s*:") then
+		return "#"
+	end
+	if lower:match("^data:") and not (allow_data_image and lower:match("^data:image/")) then
+		return "#"
+	end
+	return url
+end
+
 ----------------------------------------------------------------------
 -- Inline formatting: code spans, links, bold, italic.
 --
@@ -32,8 +48,10 @@ end
 -- hide them behind a null-delimited placeholder). Escape the remaining
 -- text, apply links/bold/italic, then restore the code spans untouched.
 ----------------------------------------------------------------------
-local function inline(text)
+local function inline(text, opts)
 	if text == nil then return "" end
+	opts = opts or {}
+	local media_prefix = opts.media_prefix or ""
 
 	-- 1. extract `inline code` spans; escape their content, wrap, hide.
 	local codes = {}
@@ -41,6 +59,22 @@ local function inline(text)
 		local wrapped = "<code>" .. escape(c) .. "</code>"
 		codes[#codes + 1] = wrapped
 		return "\1" .. #codes .. "\1"
+	end)
+
+	-- 1b. extract ![alt](url) images. Apply media_prefix to relative
+	--     "media/" URLs (before escaping) and escape both alt and URL so
+	--     neither can inject raw HTML. Hide the finished tag so the later
+	--     escape/links steps never touch it.
+	local images = {}
+	text = text:gsub("!%[(.-)%]%((.-)%)", function(alt, url)
+		url = url:gsub("^%s+", ""):gsub("%s+$", "")
+		if url:match("^media/") then
+			url = media_prefix .. url
+		end
+		url = safe_url(url, true)
+		local tag = '<img src="' .. escape(url) .. '" alt="' .. escape(alt) .. '" loading="lazy">'
+		images[#images + 1] = tag
+		return "\2" .. #images .. "\2"
 	end)
 
 	-- 2. escape everything else (links/formatting markers survive this).
@@ -60,12 +94,17 @@ local function inline(text)
 	--    url is already escaped from step 2, which is correct for an
 	--    HTML attribute (& -> &amp;, " -> &quot;).
 	text = text:gsub("%[(.-)%]%((.-)%)", function(t, u)
-		return '<a href="' .. u .. '">' .. t .. "</a>"
+		return '<a href="' .. safe_url(u, false) .. '">' .. t .. "</a>"
 	end)
 
 	-- 7. restore code spans.
 	text = text:gsub("\1(%d+)\1", function(i)
 		return codes[tonumber(i)]
+	end)
+
+	-- 8. restore image tags.
+	text = text:gsub("\2(%d+)\2", function(i)
+		return images[tonumber(i)]
 	end)
 
 	return text
@@ -163,7 +202,7 @@ end
 ----------------------------------------------------------------------
 -- Block rendering.
 ----------------------------------------------------------------------
-local function render_block(b, out)
+local function render_block(b, out, opts)
 	if b.type == "heading" then
 		local line = b.lines[1]
 		local level = line:match("^(#+)")
@@ -171,7 +210,7 @@ local function render_block(b, out)
 		txt = txt:gsub("^%s+", "")
 		txt = txt:gsub("%s#+$", "") -- trim trailing #'s
 		txt = txt:gsub("%s+$", "")
-		out[#out + 1] = string.format("<h%d>%s</h%d>\n", #level, inline(txt), #level)
+		out[#out + 1] = string.format("<h%d>%s</h%d>\n", #level, inline(txt, opts), #level)
 
 	elseif b.type == "fence" then
 		local body = table.concat(b.lines, "\n")
@@ -185,7 +224,7 @@ local function render_block(b, out)
 		local items = {}
 		for _, l in ipairs(b.lines) do
 			local c = l:gsub("^%s*[%*%-]%s", "")
-			items[#items + 1] = "<li>" .. inline(c) .. "</li>"
+			items[#items + 1] = "<li>" .. inline(c, opts) .. "</li>"
 		end
 		out[#out + 1] = "<ul>\n" .. table.concat(items, "\n") .. "\n</ul>\n"
 
@@ -193,7 +232,7 @@ local function render_block(b, out)
 		local items = {}
 		for _, l in ipairs(b.lines) do
 			local c = l:gsub("^%s*%d+%.%s", "")
-			items[#items + 1] = "<li>" .. inline(c) .. "</li>"
+			items[#items + 1] = "<li>" .. inline(c, opts) .. "</li>"
 		end
 		out[#out + 1] = "<ol>\n" .. table.concat(items, "\n") .. "\n</ol>\n"
 
@@ -202,19 +241,19 @@ local function render_block(b, out)
 		for _, l in ipairs(b.lines) do
 			stripped[#stripped + 1] = l:gsub("^>%s?", "")
 		end
-		local inner = "<p>" .. inline(table.concat(stripped, " ")) .. "</p>"
+		local inner = "<p>" .. inline(table.concat(stripped, " "), opts) .. "</p>"
 		out[#out + 1] = "<blockquote>\n" .. inner .. "\n</blockquote>\n"
 
 	elseif b.type == "para" then
 		local c = table.concat(b.lines, " ")
-		out[#out + 1] = "<p>" .. inline(c) .. "</p>\n"
+		out[#out + 1] = "<p>" .. inline(c, opts) .. "</p>\n"
 	end
 end
 
 ----------------------------------------------------------------------
 -- Public entry point.
 ----------------------------------------------------------------------
-function M.to_html(text)
+function M.to_html(text, opts)
 	if text == nil or text == "" then return "" end
 	-- normalize line endings
 	text = text:gsub("\r\n", "\n"):gsub("\r", "\n")
@@ -231,7 +270,7 @@ function M.to_html(text)
 	local blocks = split_blocks(lines)
 	local out = {}
 	for _, b in ipairs(blocks) do
-		render_block(b, out)
+		render_block(b, out, opts)
 	end
 	return table.concat(out)
 end
