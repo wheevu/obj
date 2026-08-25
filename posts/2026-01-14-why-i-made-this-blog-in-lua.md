@@ -26,7 +26,7 @@ lua5.4 build.lua
 luajit build.lua
 ```
 
-That copies `static/` into `dist/static/`, renders every post, and emits an RSS feed.
+That copies `static/` into `dist/static/` and renders every post.
 The output is plain files you can host anywhere, which is the entire point.
 
 ## What goes here

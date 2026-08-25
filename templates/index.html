@@ -7,21 +7,7 @@
 <link rel="stylesheet" href="{{base}}static/style.css">
 </head>
 <body>
-<header class="site-head">
-  <a class="brand" href="{{base}}index.html">obj</a>
-  <nav class="nav">
-    <a href="{{base}}archive.html">archive</a>
-    <a href="{{base}}rss.xml">rss</a>
-  </nav>
-</header>
-
 <main class="index">
-  <h1 class="site-title">{{site.title}}</h1>
-  <p class="tagline">{{site.tagline}}</p>
-  <p class="description">{{site.description}}</p>
-
-  <p class="stat">{{post_count}} posts, {{tag_count}} topics.</p>
-
   <section class="block">
     <h2>recent posts</h2>
     <ul class="rows">
@@ -33,12 +19,6 @@
     {{/recent}}
     </ul>
   </section>
-
-  <p class="more"><a href="{{base}}archive.html">archive</a> &middot; <a href="{{base}}rss.xml">rss</a></p>
 </main>
-
-<footer class="site-foot">
-  {{site.title}} &mdash; things I decided to keep.
-</footer>
 </body>
 </html>

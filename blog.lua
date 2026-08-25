@@ -104,10 +104,13 @@ local function run_publish()
 		os.exit(1)
 	end
 
-	-- Stage tracked changes only in project paths, then allowlist new files by
-	-- type. In particular, never stage arbitrary files dropped into media/.
+	-- Stage tracked changes and deletions in project paths, then pick up any
+	-- NEW content (posts, media, workflow files) by directory. Directory-level
+	-- adds avoid the empty-glob failures that per-extension globs hit when a
+	-- category has no files yet, while still not staging arbitrary repo-root
+	-- files. Untracked media images are intended to be published.
 	run('git add -u -- blog.lua build.lua lua templates static media posts README.md .github/workflows')
-	run('git add --ignore-errors blog.lua build.lua README.md lua/*.lua templates/*.html static/*.css static/*.js posts/*.md media/*.png media/*.jpg media/*.jpeg media/*.gif media/*.webp media/*.svg .github/workflows/*.yml')
+	run('git add -A -- posts media .github/workflows')
 
 	-- If nothing was actually staged, there is nothing to publish.
 	local h = io.popen("git diff --cached --name-only")

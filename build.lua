@@ -8,7 +8,6 @@ package.path = "./lua/?.lua;" .. package.path
 local catalog   = require("catalog")
 local markdown  = require("markdown")
 local templates = require("templates")
-local rss       = require("rss")
 
 --------------------------------------------------------------------------
 -- Site config. Single source of truth for title/URL used everywhere.
@@ -173,18 +172,6 @@ do
 	M.write("dist/index.html", html)
 end
 
--- archive: every entry, oldest first.
-do
-	local rows = {}
-	for _, e in ipairs(entries) do
-		rows[#rows + 1] = entry_row(e)
-	end
-	local html = render_page("archive.html", {
-		entries = rows,
-	})
-	M.write("dist/archive.html", html)
-end
-
 -- individual post pages (prev/next by date).
 local written_posts = 0
 for _, e in ipairs(entries) do
@@ -230,9 +217,6 @@ for _, tag in ipairs(ordered_tags) do
 	M.write(string.format("dist/tags/%s.html", tag.slug), html)
 	written_tags = written_tags + 1
 end
-
--- rss
-M.write("dist/rss.xml", rss.build(newest, site))
 
 --------------------------------------------------------------------------
 -- Copy static assets.
