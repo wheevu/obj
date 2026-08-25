@@ -32,7 +32,7 @@ a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px; }
 
 /* ---- page shell ---- */
-main, .content { max-width: var(--measure); margin: 0 auto; padding: 0 1.5rem 4rem; }
+main, .content { max-width: var(--measure); margin: 0 auto; padding: 3.5rem 1.5rem 4rem; }
 
 /* ---- header ---- */
 .site-header, .site-head { max-width: var(--measure); margin: 0 auto; padding: 3.5rem 1.5rem 1.75rem; }
@@ -141,7 +141,7 @@ th { font-weight: 600; color: var(--ink-soft); font-size: 0.82rem; }
 .site-header, .site-head { padding-top: 2.5rem; }
 	.site-title { font-size: 1.7rem; }
 	.nav { gap: 1rem; }
-	main, .content { padding-bottom: 3rem; }
+	main, .content { padding: 2.5rem 1.5rem 3rem; }
 	.pager { flex-direction: column; }
 	.rows li { display: block; }
 	.rows .date { display: block; margin-top: 0.2rem; }
