@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{entry.title}} / {{site.title}}</title>
+<link rel="stylesheet" href="{{base}}static/style.css">
+</head>
+<body>
+<header class="site-head">
+  <a class="brand" href="{{base}}index.html">obj</a>
+  <nav class="nav">
+    <a href="{{base}}index.html">home</a>
+    <a href="{{base}}archive.html">archive</a>
+    <a href="{{base}}index.html#collections">collections</a>
+    <a href="{{base}}rss.xml">rss</a>
+  </nav>
+  <div class="page-label">{{page}}</div>
+</header>
+
+<main class="post">
+  <h1 class="post-title">{{entry.title}}</h1>
+  <p class="classification">CLASSIFICATION: {{entry.type_label}} &middot; {{entry.id}} &middot; {{entry.date}}</p>
+
+  <article class="body">
+    {{{entry.body_html}}}
+  </article>
+
+  <section class="block">
+    <h2>FILED UNDER</h2>
+    <ul class="tags">
+    {{#entry.tags}}
+      <li><a href="{{base}}types/tag--{{slug}}.html">{{label}}</a></li>
+    {{/entry.tags}}
+    </ul>
+  </section>
+
+  <section class="block">
+    <h2>THE OFFICIAL VERSION</h2>
+    <table class="meta">
+      <tbody>
+      {{#entry.meta_rows}}
+      <tr><th>{{label}}</th><td>{{value}}</td></tr>
+      {{/entry.meta_rows}}
+      </tbody>
+    </table>
+  </section>
+
+  <nav class="pager">
+    {{#prev}}
+    <a class="prev" href="{{base}}{{href}}">&larr; {{title}} <span class="ptype">{{type_label}}</span></a>
+    {{/prev}}
+    {{#next}}
+    <a class="next" href="{{base}}{{href}}">{{title}} &rarr; <span class="ptype">{{type_label}}</span></a>
+    {{/next}}
+  </nav>
+</main>
+
+<footer class="site-foot">
+  <span>{{site.title}}</span> &mdash; things I decided not to lose.
+</footer>
+</body>
+</html>

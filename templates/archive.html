@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{site.title}} / archive</title>
+<link rel="stylesheet" href="{{base}}static/style.css">
+</head>
+<body>
+<header class="site-head">
+  <a class="brand" href="{{base}}index.html">obj</a>
+  <nav class="nav">
+    <a href="{{base}}index.html">home</a>
+    <a href="{{base}}archive.html">archive</a>
+    <a href="{{base}}index.html#collections">collections</a>
+    <a href="{{base}}rss.xml">rss</a>
+  </nav>
+  <div class="page-label">{{page}}</div>
+</header>
+
+<main class="archive">
+  <h1 class="site-title">{{site.title}}</h1>
+  <p class="stat"><strong>{{entry_count}}</strong> things, in the order they happened.</p>
+
+  <section class="block">
+    <table class="rows full">
+      <thead><tr><th>id</th><th>type</th><th>title</th><th>date</th></tr></thead>
+      <tbody>
+      {{#entries}}
+      <tr>
+        <td class="id">{{id}}</td>
+        <td class="type">{{type_label}}</td>
+        <td class="title"><a href="{{base}}{{href}}">{{title}}</a></td>
+        <td class="date">{{date}}</td>
+      </tr>
+      {{/entries}}
+      </tbody>
+    </table>
+  </section>
+</main>
+
+<footer class="site-foot">
+  <span>{{site.title}}</span> &mdash; things I decided not to lose.
+</footer>
+</body>
+</html>

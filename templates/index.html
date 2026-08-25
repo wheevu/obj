@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{site.title}}</title>
+<link rel="stylesheet" href="{{base}}static/style.css">
+</head>
+<body>
+<header class="site-head">
+  <a class="brand" href="{{base}}index.html">obj</a>
+  <nav class="nav">
+    <a href="{{base}}index.html">home</a>
+    <a href="{{base}}archive.html">archive</a>
+    <a href="{{base}}index.html#collections">collections</a>
+    <a href="{{base}}rss.xml">rss</a>
+  </nav>
+  <div class="page-label">{{page}}</div>
+</header>
+
+<main class="index">
+  <h1 class="site-title">{{site.title}}</h1>
+  <p class="tagline">{{site.tagline}}</p>
+
+  <p class="stat"><strong>{{count_display}}</strong> records indexed</p>
+  <p class="stat">last accession: {{last_accession}}</p>
+
+  <section id="collections" class="block">
+      <h2>THINGS I HAVE FILED</h2>
+    <ul class="collection-list">
+    {{#collections}}
+      <li><a href="{{base}}{{href}}">{{label}}</a> <span class="count">{{count}}</span></li>
+    {{/collections}}
+    </ul>
+  </section>
+
+  <section class="block">
+      <h2>RECENTLY MADE IMPORTANT</h2>
+    <table class="rows">
+      <thead><tr><th>type</th><th>title</th><th>date</th></tr></thead>
+      <tbody>
+      {{#recent}}
+      <tr>
+        <td class="type">{{type_label}}</td>
+        <td class="title"><a href="{{base}}{{href}}">{{title}}</a></td>
+        <td class="date">{{date}}</td>
+      </tr>
+      {{/recent}}
+      </tbody>
+    </table>
+  </section>
+</main>
+
+<footer class="site-foot">
+  <span>{{site.title}}</span> &mdash; things I decided not to lose.
+</footer>
+</body>
+</html>
