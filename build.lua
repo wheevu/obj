@@ -116,14 +116,27 @@ end)
 --------------------------------------------------------------------------
 -- Render helpers.
 --------------------------------------------------------------------------
+-- Cache-bust version for static assets: a short hash of the file content.
+-- Templates emit style.css?v={{style_v}}, so any edit to the stylesheet
+-- produces a fresh URL and browsers never serve a stale cached copy.
+-- Plain arithmetic (no bit ops) so it runs on LuaJIT 5.1 through Lua 5.5.
+local asset_version = function(path)
+	local content = M.read(path) or ""
+	local h = 0
+	for i = 1, #content do
+		h = (h * 31 + content:byte(i)) % 2147483647
+	end
+	return string.format("%08x", h)
+end
+local style_v = asset_version("static/style.css")
+
 -- base: prefix for internal links. "" at dist/ root, "../" one level deep
 -- (dist/posts/, dist/tags/). All hrefs passed to templates are kept
 -- root-relative, and templates prepend {{base}} to them.
 local render_page = function(template, data, base)
-	data.base = base or ""
-	data.site = site
-	data.post_count = #entries
-	data.tag_count  = #ordered_tags
+	data.base    = base or ""
+	data.site    = site
+	data.style_v = style_v
 	return templates.render(template, data)
 end
 
