@@ -1,10 +1,9 @@
 # obj
 
-my blog.
+my blog place! I write about life and things
 
-I write about life and whatever else I feel like putting here.
 The site is built from Markdown with a little Lua blog maker,
-mostly because I wanted an excuse to use Lua.
+mostly because I wanted an excuse to use Lua :p
 
 ## How it works
 
@@ -22,7 +21,6 @@ mostly because I wanted an excuse to use Lua.
    and pushes to GitHub. GitHub Actions builds the same source and GitHub
    Pages serves the result. No manual deploy step.
 
-4. **Read it.**
    The live site is at <https://wheevu.github.io/obj/>.
 
 ## Commands
