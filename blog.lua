@@ -109,7 +109,7 @@ local function run_publish()
 	-- adds avoid the empty-glob failures that per-extension globs hit when a
 	-- category has no files yet, while still not staging arbitrary repo-root
 	-- files. Untracked media images are intended to be published.
-	run('git add -u -- blog.lua build.lua lua templates static media posts README.md .github/workflows')
+run('git add -u -- blog.lua build.lua lua templates static media posts README.md GUIDE.md .github/workflows')
 	run('git add -A -- posts media .github/workflows')
 
 	-- If nothing was actually staged, there is nothing to publish.
